@@ -168,7 +168,7 @@ try:
     all_sprites.add(player)
 
     # Шанс появления куба в начале игры (в процентах)
-    chance_of_cube = 100  # 10% шанс
+    chance_of_cube = 10  # 10% шанс
 
     if random.randint(1, 100) <= chance_of_cube:
         # Если случайное число в пределах шанса, заменяем Apelsin на куб

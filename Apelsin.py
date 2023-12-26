@@ -27,7 +27,7 @@ except pygame.error as e:
 # Инициализация окна
 try:
     screen = pygame.display.set_mode((WIDTH, HEIGHT))
-    pygame.display.set_caption("Dino Game")
+    pygame.display.set_caption("Apelsin Minimum Wages")
 except pygame.error as e:
     print(f"Error creating window: {e}")
     sys.exit()
@@ -171,7 +171,7 @@ try:
     chance_of_cube = 100  # 10% шанс
 
     if random.randint(1, 100) <= chance_of_cube:
-        # Если случайное число в пределах шанса, заменяем динозавра на куб
+        # Если случайное число в пределах шанса, заменяем Apelsin на куб
         all_sprites.remove(player)
         cube = Cube()
         all_sprites.add(cube)

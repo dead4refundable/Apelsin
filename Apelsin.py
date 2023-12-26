@@ -27,9 +27,9 @@ except pygame.error as e:
 # Инициализация окна
 try:
     screen = pygame.display.set_mode((WIDTH, HEIGHT))
-    pygame.display.set_caption("Apelsin Minimum Wages")
+    pygame.display.set_caption("Dino Game")
 except pygame.error as e:
-    print("Error initializing window:", e)
+    print(f"Error creating window: {e}")
     sys.exit()
 
 # Загрузка изображения фона (дневного и ночного)
@@ -53,6 +53,15 @@ except pygame.error as e:
 # Инициализация игры
 clock = pygame.time.Clock()
 
+# Достижения
+achievements = {
+    "Novice Jumper": {"condition": lambda elapsed_time: elapsed_time >= 1000, "unlocked": False},
+    "Expert Jumper": {"condition": lambda elapsed_time: elapsed_time >= 500, "unlocked": False},
+    "Speed Demon": {"condition": lambda elapsed_time: elapsed_time <= 200, "unlocked": False},
+    # Добавьте другие достижения по необходимости
+}
+
+
 class Dino(pygame.sprite.Sprite):
     def __init__(self):
         super().__init__()
@@ -63,7 +72,7 @@ class Dino(pygame.sprite.Sprite):
             self.rect.x = 50
             self.jump_speed = 0
             self.jump_height = -25  # Увеличение высоты прыжка
-            self.jump_length = 15   # Длина прыжка
+            self.jump_length = 15  # Длина прыжка
             self.jump_countdown = 0
             self.elapsed_time = 0
         except pygame.error as e:
@@ -89,6 +98,31 @@ class Dino(pygame.sprite.Sprite):
 
         self.elapsed_time += clock.get_rawtime()  # Увеличиваем счетчик миллисекунд
 
+
+# Класс куба
+class Cube(pygame.sprite.Sprite):
+    def __init__(self):
+        super().__init__()
+
+        try:
+            # Попытка загрузить изображение куба
+            cube_image = pygame.image.load("cube.png").convert_alpha()
+        except pygame.error as e:
+            print(f"Error loading cube image: {e}")
+            cube_image = None
+
+        self.image = pygame.transform.scale(cube_image, (30, 30)) if cube_image else pygame.Surface((30, 30))
+        pygame.draw.rect(self.image, (255, 255, 0), (0, 0, 30, 30))  # Желтый куб
+        self.rect = self.image.get_rect()
+        self.rect.bottom = GROUND_HEIGHT
+        self.rect.x = WIDTH + 50
+        self.speed = 5
+
+    def update(self):
+        self.rect.x -= self.speed
+        if self.rect.right < 0:
+            self.rect.left = WIDTH + 50
+
 class Cactus(pygame.sprite.Sprite):
     def __init__(self, speed):
         super().__init__()
@@ -109,11 +143,12 @@ class Cactus(pygame.sprite.Sprite):
         if self.rect.right < 0:
             self.spawn()
 
+
 # Инициализация базы данных
 conn = sqlite3.connect(DATABASE_FILE)
 cursor = conn.cursor()
 
-# Создание таблицы, если она не существует
+# Создание таблицы
 cursor.execute('''
     CREATE TABLE IF NOT EXISTS players (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -131,11 +166,26 @@ cacti = pygame.sprite.Group()
 try:
     player = Dino()
     all_sprites.add(player)
+
+    # Шанс появления куба в начале игры (в процентах)
+    chance_of_cube = 100  # 10% шанс
+
+    if random.randint(1, 100) <= chance_of_cube:
+        # Если случайное число в пределах шанса, заменяем динозавра на куб
+        all_sprites.remove(player)
+        cube = Cube()
+        all_sprites.add(cube)
 except pygame.error as e:
     print("Error creating player sprite:", e)
     sys.exit()
 
-# Создание кактусов
+if random.randint(1, 100) <= chance_of_cube:
+    # Если случайное число в пределах шанса, заменяем Apelsin на куб
+    all_sprites.remove(player)
+    cube = Cube()
+    all_sprites.add(cube)
+
+# Создание ёлок
 max_cacti_together = 3
 speed_increase = 0  # Переменная для увеличения скорости
 for _ in range(max_cacti_together):
@@ -149,11 +199,11 @@ for _ in range(max_cacti_together):
         print("Error creating cactus sprite:", e)
         sys.exit()
 
-# Счетчик новых ёлок
+# Счетчик новых елок
 new_cactus_count = 0
 
 # Расстояние между елками
-distance_between_cacti = 200  # Измените это значение на необходимое вам
+distance_between_cacti = 200
 
 # Время, после которого начинают чаще появляться препятствия (в миллисекундах)
 increase_spawn_time = 1000
@@ -165,14 +215,15 @@ player_name = ""  # Имя игрока
 
 # Окно старта
 font = pygame.font.Font(None, 36)
-input_box = pygame.Rect(WIDTH // 2 - 100, HEIGHT // 2 - 20, 140, 32)
+welcome_text = "Welcome to Apelsin Minimum Wages!"
+input_box = pygame.Rect(WIDTH // 2 - 100, HEIGHT // 2 - 50, 300, 32)
 color_inactive = pygame.Color('lightskyblue3')
 color_active = pygame.Color('dodgerblue2')
 color = color_inactive
 active = False
 text = ''
 text_surface = font.render(text, True, color)
-width = max(200, text_surface.get_width()+10)
+width = max(200, text_surface.get_width() + 10)
 
 while not start_game:
     for event in pygame.event.get():
@@ -193,20 +244,33 @@ while not start_game:
                     text = text[:-1]
                 else:
                     text += event.unicode
-                width = max(200, font.render(text, True, color).get_width()+10)
+                width = max(200, font.render(text, True, color).get_width() + 10)
                 text_surface = font.render(text, True, color)
 
     screen.fill((0, 0, 0))
     pygame.draw.rect(screen, color, input_box, 2)
-    screen.blit(text_surface, (input_box.x+5, input_box.y+5))
+    screen.blit(text_surface, (input_box.x + 5, input_box.y + 5))
     input_box.w = width
+
+    # Отображение приветственного текста
+    welcome_font = pygame.font.Font(None, 48)
+    welcome_surface = welcome_font.render(welcome_text, True, (255, 255, 255))
+    welcome_rect = welcome_surface.get_rect(center=(WIDTH // 2, HEIGHT // 4))
+    screen.blit(welcome_surface, welcome_rect)
+
     pygame.display.flip()
     clock.tick(FPS)
 
 player_name = text
 
+# Окно таблицы лидеров
+leaderboard_font = pygame.font.Font(None, 36)
+leaderboard_text = "Leaderboard"
+leaderboard_rect = leaderboard_font.render(leaderboard_text, True, (255, 255, 255)).get_rect(center=(WIDTH // 2, 50))
+
 # Основной игровой цикл после ввода имени
 while running:
+    hits = None
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
@@ -216,17 +280,48 @@ while running:
         all_sprites.update()
     except pygame.error as e:
         print("Error updating sprites:", e)
+        pygame.quit()
+        conn.close()
         sys.exit()
 
-    # Проверка столкновения динозавра с кактусами
+    # Проверка столкновения динозавра с елками
     hits = pygame.sprite.spritecollide(player, cacti, False)
     if hits:
         score = int(player.elapsed_time)
-        print(f"Game Over! Your score: {score} ms")
+        result_text = f"Game Over! Your score: {score} ms"
 
-        # Добавление результата в базу данных
-        cursor.execute("INSERT INTO players (name, score) VALUES (?, ?)", (player_name, score))
-        conn.commit()
+        # Отображение окна результатов
+        result_font = pygame.font.Font(None, 36)
+        result_surface = result_font.render(result_text, True, (255, 0, 0))
+        result_rect = result_surface.get_rect(center=(WIDTH // 2, HEIGHT // 2))
+
+        # Отображение окна таблицы лидеров
+        screen.fill((0, 0, 0))
+
+        # Получение данных из базы данных и сортировка по счету
+        cursor.execute("SELECT name, score FROM players ORDER BY score DESC LIMIT 10")
+        leaderboard_data = cursor.fetchall()
+
+        # Проверка, установлен ли новый рекорд
+        cursor.execute("SELECT MAX(score) FROM players WHERE name = ?", (player_name,))
+        current_high_score = cursor.fetchone()[0]
+
+        if current_high_score is None or score > current_high_score:
+            # Установка нового рекорда
+            cursor.execute("UPDATE players SET score = ? WHERE name = ?", (score, player_name))
+            conn.commit()
+
+        # Отображение данных в таблице лидеров
+        for i, (name, score) in enumerate(leaderboard_data):
+            entry_text = f"{i + 1}. {name}: {score} ms"
+            entry_surface = leaderboard_font.render(entry_text, True, (255, 255, 255))
+            entry_rect = entry_surface.get_rect(center=(WIDTH // 2, 100 + i * 30))
+            screen.blit(entry_surface, entry_rect)
+
+        pygame.display.flip()
+
+        # Ожидание 5 секунд перед завершением игры
+        pygame.time.delay(5000)
 
         running = False
 
@@ -295,6 +390,13 @@ while running:
     except pygame.error as e:
         print("Error drawing line:", e)
         sys.exit()
+
+    # Проверка достижений
+    for achievement_name, achievement_data in achievements.items():
+        condition_met = achievement_data["condition"](player.elapsed_time)
+        if condition_met and not achievement_data["unlocked"]:
+            print(f"Achievement Unlocked: {achievement_name}")
+            achievement_data["unlocked"] = True
 
     # Обновление экрана
     pygame.display.flip()

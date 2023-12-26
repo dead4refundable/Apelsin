@@ -58,7 +58,6 @@ achievements = {
     "Novice Jumper": {"condition": lambda elapsed_time: elapsed_time >= 1000, "unlocked": False},
     "Expert Jumper": {"condition": lambda elapsed_time: elapsed_time >= 500, "unlocked": False},
     "Speed Demon": {"condition": lambda elapsed_time: elapsed_time <= 200, "unlocked": False},
-    # Добавьте другие достижения по необходимости
 }
 
 
@@ -284,7 +283,7 @@ while running:
         conn.close()
         sys.exit()
 
-    # Проверка столкновения динозавра с елками
+    # Проверка столкновения Apelsin с елками
     hits = pygame.sprite.spritecollide(player, cacti, False)
     if hits:
         score = int(player.elapsed_time)
